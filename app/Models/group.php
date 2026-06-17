@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class group extends Model
+class Group extends Model
 {
     use HasFactory;
 
@@ -12,6 +13,15 @@ class group extends Model
         'name',
         'description',
         'owner_id',
-        'last_message_id'
     ];
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'group_users');
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
 }

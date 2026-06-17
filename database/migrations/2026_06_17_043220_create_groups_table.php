@@ -15,16 +15,14 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->longText('description')->nullable();
-            $table->foreignId('owner_id');
-            $table->id('owner_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('owner_id')->constrained('users')->onDelete('cascade');
+           // $table->id('owner_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();
         });
-        Schema::create('group_users', function (Blueprint $table) {
+       Schema::create('group_users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->longText('description')->nullable();
-            $table->foreignId('owner_id');
-            $table->id('owner_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('group_id')->constrained('groups')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();
         });
     }

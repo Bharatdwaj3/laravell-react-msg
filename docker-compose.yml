@@ -1,0 +1,146 @@
+name: honji-ji
+services:
+  
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_ctr
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_PASSWORD: ${PgSql_Password}
+      POSTGRES_USER: ${PgSql_User}
+      POSTGRES_DB: ${PgSql_Database}
+    ports: 
+      - 5433:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - honji-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s  
+  
+  app:
+    build:
+        context: .
+        dockerfile: Dockerfile
+    container_name: honji-app
+    restart: unless-stopped
+    environment:
+        - DB_HOST=db
+        - DB_PORT=5432
+        - NODE_ENV=production
+        - DATABASE_URL=postgresql://${PgSql_User}:${PgSql_Password}@db:5432/${PgSql_Database}?schema=public
+        - FIREBASE_AUTH_EMULATOR_HOST=host.docker.internal:9099
+        - FIREBASE_STORAGE_EMULATOR_HOST=host.docker.internal:9199
+    ports: 
+      - 3000:3000 
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - honji-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  redis: 
+    image: redis:7-alpine
+    container_name: honji-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - honji-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: honji-cadvisor
+    restart: unless-stopped
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - honji-network
+    
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: honji-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - honji-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+
+  loki:
+    image: grafana/loki:latest
+    container_name: honji-loki
+    restart: unless-stopped
+    user: "0"
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yml:ro
+    command: -config.file=/etc/loki/local-config.yml
+    networks:
+      - honji-network
+    
+  promtail:
+    depends_on:
+    - loki
+    image: grafana/promtail:latest
+    container_name: honji-promtail
+    restart: unless-stopped
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - honji-network
+    command: -config.file=/etc/promtail/config.yml
+  
+  grafana:
+    depends_on:
+    - prometheus
+    - loki
+    image: grafana/grafana:latest
+    container_name: honji-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - honji-network
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+
+networks:
+  honji-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

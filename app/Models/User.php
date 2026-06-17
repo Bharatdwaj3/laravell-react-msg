@@ -18,9 +18,13 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'avatar',
         'name',
         'email',
+        'email_verfiied_art',
         'password',
+        'is_admin'
+        
     ];
 
     /**
@@ -44,5 +48,15 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public  function users(){
+        return $this->belongsToMany(User::class,'group_users');
+    }
+    public  function messages(){
+        return $this->hanMany(Message::class);
+    }
+    public  function owner(){
+        return $this->belongsTo(User::class);
     }
 }

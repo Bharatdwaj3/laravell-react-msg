@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "daisyui/dist/full.css";
+
+/* Custom Global Utilities added during the layout phase */
+body {
+    @apply bg-slate-900 text-slate-100 antialiased overflow-hidden selection:bg-indigo-500 selection:text-white;
+}
+
+/* Custom scrollbar layouts matching the dark theme sidebar layout */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #475569; /* Slate 600 */
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b; /* Slate 500 */
+}

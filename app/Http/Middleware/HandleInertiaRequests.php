@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Conversation;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -35,6 +37,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'conversations' => \Illuminate\Support\Facades\Auth::id() 
+    ? \App\Models\Conversation::getConversationsForSidebar(\Illuminate\Support\Facades\Auth::user()) 
+    : [],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
